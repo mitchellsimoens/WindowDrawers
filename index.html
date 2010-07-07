@@ -1,0 +1,174 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <title>Window Drawer Basic Example</title>
+<link rel="stylesheet" type="text/css" href="ext-3.2.1/resources/css/ext-all.css" />
+<script type="text/javascript" src="ext-3.2.1/adapter/ext/ext-base.js"></script>
+<script type="text/javascript" src="ext-3.2.1/ext-all.js"></script>
+
+<script type='text/javascript' src="Ext.ux.Mitchell.WindowDrawer.js"></script>
+
+    <script type='text/javascript'>
+		var windows = new Ext.WindowGroup();
+
+		Ext.onReady(function(){
+
+			var win;
+
+			var genericTbar = [
+				{
+					text : 'Button1'
+				},
+				{
+					text : 'Button2'
+				}
+			];
+
+			win = new Ext.Window({
+				layout      : 'fit',
+				width       : 350,
+				height      : 250,
+				modal       : false,
+				minHeight   : 225,
+				closeAction :'hide',
+				plain       : true,
+				closable    : false,
+				constrain   : true,
+				title       : 'Example Window with Four Drawers',
+				html        : "Mitchell Simoens' WindowDrawers",
+				buttonAlign : 'center',
+				tbar        : [
+					{
+						text: 'SHOW ALL',
+						handler: function() {
+							for (var drawer in win.drawers) {
+                                win.drawers[drawer].show();
+                            }
+						}
+
+					}, 
+					'->',
+					{
+						text: 'HIDE ALL',
+						handler: function() {
+                            for (var drawer in win.drawers) {
+                                win.drawers[drawer].hide();
+                            }
+						}
+					}
+				],
+				bbar: [
+					{
+						text: 'ST',
+						handler: function() {
+							win.drawers.n.show();
+						}
+					},
+					{
+						text: 'SR',
+						handler: function() {
+							win.drawers.e.show();
+						}
+					},
+					{
+						text: 'SB',
+						handler: function() {
+							win.drawers.s.show();
+						}
+					},
+					{
+						text: 'SL',
+						handler: function() {
+							win.drawers.w.show();
+						}
+					},
+					'->',
+					{
+						text: 'HT',
+						handler: function() {
+							win.drawers.n.hide();
+						}
+					},
+					{
+						text: 'HR',
+						handler: function() {
+							win.drawers.e.hide();
+						}
+					},
+					{
+						text: 'HB',
+						handler: function() {
+							win.drawers.s.hide();
+						}
+					},
+					{
+						text: 'HL',
+						handler: function() {
+							win.drawers.w.hide();
+						}
+					}
+				],
+				plugins : [
+					new Ext.ux.Mitchell.WindowDrawer({
+						xtype     : 'windowdrawer',
+						html      : 'EAST',
+						side      : 'e', // Can be n e s w
+						animate   : true,
+						bbar      : genericTbar,
+						resizable : true,
+						closable  : true,
+						title     : 'East Drawer',
+						width     : 150,
+						minWidth  : 150
+					}),
+					new Ext.ux.Mitchell.WindowDrawer({
+						xtype     : 'windowdrawer',
+						html      : 'WEST',
+						side      : 'w', // Can be n e s w
+						animate   : true,
+						bbar      : genericTbar,
+						resizable : true,
+						closable  : true,
+						title     : 'West Drawer',
+						width     : 150,
+						minWidth  : 150
+					}),
+					new Ext.ux.Mitchell.WindowDrawer({
+						xtype     : 'windowdrawer',
+						height    : 120,
+						minHeight : 120,
+						html      : 'NORTH',
+						side      : 'n', // Can be n e s w
+						animate   : true,
+						resizable : true,
+						closable  : true,
+						title     : 'North Drawer - title',
+						tbar      : genericTbar
+					}),
+					new Ext.ux.Mitchell.WindowDrawer({
+						xtype     : 'windowdrawer',
+						height    : 120,
+						minHeight : 120,
+						animate   : true,
+						html      : 'South Drawer - no title',
+						side      : 's', // Can be n e s w
+						bbar      : genericTbar,
+						resizable : true
+					})
+				]
+			});
+
+			win.show();
+
+//            for (var drawer in win.drawers) {
+//                win.drawers[drawer].show();
+//            }
+		});
+    </script>
+
+
+</head>
+<body>
+</body>
+</html>
