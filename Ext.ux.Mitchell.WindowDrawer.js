@@ -26,6 +26,36 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 				this.renderTo = p.el;
 			}
 		});
+		
+        /**
+         * Manage the ghosting, but NOT for IE, which is a complete fail.  IE's filter css prevents the child ghost
+         * from appearing.
+         */
+
+
+        if (! Ext.isIE) {
+        	var drawerGhost = null;
+            var drawer =  this;
+            parent.ghost = parent.ghost.createSequence(function() {
+                if (drawer.el && ! drawer.hidden) {
+                    var winGhost    = this.activeGhost,
+                        drawerGhost = drawer.ghost();
+
+                    winGhost.appendChild(drawerGhost);
+                    drawerGhost.anchorTo(winGhost.dom, drawer.alignToParams.alignTo, drawer.alignToParams.alignToXY);
+                    drawerGhost.applyStyles('z-index: -1;');
+                    winGhost.applyStyles('overflow: visible;');
+                }
+            });
+            parent.unghost = parent.unghost.createInterceptor(function() {
+                if (drawer.activeGhost) {
+                    drawer.unghost();
+                    if (Ext.isWebKit || Ext.isGecko4 || Ext.isOpera) {
+                    	drawer.anchorTo(this.el.dom, drawer.alignToParams.alignTo, drawer.alignToParams.alignToXY);
+                    }
+                }
+            });
+        }
 	},
 	// private
 	initComponent   : function() {
@@ -112,11 +142,7 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 			break;
 		}
 		if (!this.hidden) {
-			if (Ext.isWebKit || Ext.isGecko4 || Ext.isOpera) {
-				this.el.alignTo(this.win.el, this.alignToParams.alignTo, this.alignToParams.alignToXYCSS3);
-			} else {
-				this.el.alignTo(this.win.el, this.alignToParams.alignTo, this.alignToParams.alignToXY);
-			}
+			this.el.alignTo(this.win.el, this.alignToParams.alignTo, (Ext.isWebKit || Ext.isGecko4 || Ext.isOpera) ? this.alignToParams.alignToXYCSS3 : this.alignToParams.alignToXY);
 			// Simple fix for IE, where the bwrap doesn't properly resize.
 			if (Ext.isIE) {
 				this.bwrap.hide();
@@ -125,6 +151,12 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 		}
 		// force doLayout()
 		this.doLayout();
+	},
+	//private
+	onBeforeHide : function() {
+		if (this.animate) {
+			this.getEl().addClass('x-panel-animated');
+		}
 	},
 	hide            : function(skipAnim) {
 		if (this.hidden) {
@@ -169,13 +201,11 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 	afterShow       : function(skipAnim) {
     	this.el.show();
     	if (this.animate && !skipAnim) {
+    		this.getEl().removeClass('x-panel-animated');
     		if (Ext.isWebKit || Ext.isGecko4 || Ext.isOpera) {
     			this.CSS3slide({
 					duration  : this.animDuration || .25,
-					direction : "out",
-					callback  : function() {
-    					alert("Good");
-    				}
+					direction : "out"
 				});
     		} else {
     			this.el.slideIn(this.alignToParams.slideDirection, {
