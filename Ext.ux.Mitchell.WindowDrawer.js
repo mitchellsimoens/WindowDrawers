@@ -79,7 +79,7 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 				Ext.apply(this.alignToParams, {
 					alignTo        : 'tl',
 					alignToXY      :  [5, (this.el.getComputedHeight() * -1) + 5],
-					halignToXY     :  [5, 5],
+					alignToXYCSS3  :  [5, 5],
 					slideDirection : 'b'
 				});
 			break;
@@ -88,7 +88,7 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 				Ext.apply(this.alignToParams, {
 					alignTo        : 'bl',
 					alignToXY      :  [5, (Ext.isIE6)? -2 : -7],
-					halignToXY     :  [5, (Ext.isIE6)? (this.el.getComputedHeight() * -1) : ((this.el.getComputedHeight() * -1) - 5)],
+					alignToXYCSS3  :  [5, (Ext.isIE6)? (this.el.getComputedHeight() * -1) : ((this.el.getComputedHeight() * -1) - 5)],
 					slideDirection : 't'
 				});
 			break;
@@ -97,7 +97,7 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 				Ext.apply(this.alignToParams, {
 					alignTo        : 'tl',
 					alignToXY      :  [(this.el.getComputedWidth() * -1) + 5, 5],
-					halignToXY     :  [5, 5],
+					alignToXYCSS3  :  [5, 5],
 					slideDirection : 'r'
 				});
 			break;
@@ -106,20 +106,22 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 				Ext.apply(this.alignToParams, {
 					alignTo        : 'tr',
 					alignToXY      :  [-5, 5],
-					halignToXY     :  [(this.el.getComputedWidth() * -1) - 5, 5],
+					alignToXYCSS3  :  [(this.el.getComputedWidth() * -1) - 5, 5],
 					slideDirection : 'l'
 				});
 			break;
 		}
 		if (!this.hidden) {
-			this.el.alignTo(this.win.el, this.alignToParams.alignTo, this.alignToParams.alignToXY);
+			if (Ext.isWebKit || Ext.isGecko4 || Ext.isOpera) {
+				this.el.alignTo(this.win.el, this.alignToParams.alignTo, this.alignToParams.alignToXYCSS3);
+			} else {
+				this.el.alignTo(this.win.el, this.alignToParams.alignTo, this.alignToParams.alignToXY);
+			}
 			// Simple fix for IE, where the bwrap doesn't properly resize.
 			if (Ext.isIE) {
 				this.bwrap.hide();
 				this.bwrap.show();
 			}
-		} else {
-			this.el.alignTo(this.win.el, this.alignToParams.alignTo, this.alignToParams.halignToXY);
 		}
 		// force doLayout()
 		this.doLayout();
@@ -132,10 +134,17 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 			if (this.el.shadow) {
 				this.el.disableShadow();
 			}
-			if (Ext.isWebKit || Ext.isGecko3) {
-				this.CSS3slideIn({
-					duration: this.animDuration || .25
+			if (Ext.isWebKit || Ext.isGecko4 || Ext.isOpera) {
+				this.CSS3slide({
+					duration  : this.animDuration || .25,
+					direction : "in"
 				});
+			} else {
+				this.el.slideOut(this.alignToParams.slideDirection, {
+	                duration : this.animDuration || .25,
+	                callback : this.onAfterAnimHide,
+	                scope    : this
+	            });
 			}
 			this.hidden = true;
 		} else {
@@ -147,9 +156,7 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 		if (! this.rendered) {
             this.render(this.renderTo);
         }
-		if (this.hidden) {
-			this.setAlignment();
-		}
+		this.setAlignment();
         this.setZIndex();
 	},
 	show            : function(skipAnim) {
@@ -162,62 +169,64 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 	afterShow       : function(skipAnim) {
     	this.el.show();
     	if (this.animate && !skipAnim) {
-    		if (Ext.isWebKit || Ext.isGecko3) {
-				this.CSS3slideOut({
-					duration: this.animDuration || .25
+    		if (Ext.isWebKit || Ext.isGecko4 || Ext.isOpera) {
+    			this.CSS3slide({
+					duration  : this.animDuration || .25,
+					direction : "out",
+					callback  : function() {
+    					alert("Good");
+    				}
 				});
     		} else {
-    			
+    			this.el.slideIn(this.alignToParams.slideDirection, {
+                    scope    : this,
+                    duration : this.animDuration || .25,
+                    callback : function() {
+                        if (this.el.shadow) { // honour WindowDrawer's "shadow" config
+                            // re-enable shadows after animation
+                            this.el.enableShadow(true);
+                        }
+                        // REQUIRED!!
+                        this.el.show(); // somehow forces the shadow to appear
+                    }
+                });
     		}
     	} else {
     		Ext.ux.Mitchell.WindowDrawer.superclass.afterShow.call(this);
     	}
 	},
-	CSS3slideIn     : function(o) {
+	CSS3slide       : function(o) {
 		var transform = "";
-		switch(this.side) {
-			case 'n' :
-				transform = "translateY(0px)";
-			break;
-			case 's' :
-				transform = "translateY(0px)";
-			break;
-			case 'w' :
-				transform = "translateX(0px)";
-			break;
-			case 'e' :
-				transform = "translateX(0px)";
-			break;
+		if (o.direction === "in") {
+			transform = (this.side === "n" || this.side === "s") ? "translateY(0px)" : "translateX(0px)";
+		} else {
+			switch(this.side) {
+				case 'n' :
+					transform = "translateY(-"+this.height+"px)";
+				break;
+				case 's' :
+					transform = "translateY("+this.height+"px)";
+				break;
+				case 'e' :
+					transform = "translateX("+this.width+"px)";
+				break;
+				case 'w' :
+					transform = "translateX(-"+this.width+"px)";
+				break;
+			}
+		}
+		if (o.callback) {
+			this.el.addListener("webkitTransitionEnd", o.callback, this, {
+				single: true
+			});
 		}
 		this.el.setStyle({
-			"-webkit-transition": "all "+o.duration+"s ease-in",
-			"-moz-transition": "all 5s ease-in",
+			"-webkit-transition": "-webkit-transform "+o.duration+"s ease-in",
+			"-moz-transition": "-moz-transform "+o.duration+"s ease-in",
+			"-o-transition": "-o-transform "+o.duration+"s ease-in",
 			"-webkit-transform": transform,
-			"-moz-transform": transform
-		});
-	},
-	
-	CSS3slideOut    : function(o) {
-		var transform = "";
-		switch(this.side) {
-			case 'n' :
-				transform = "translateY(-"+this.height+"px)";
-			break;
-			case 's' :
-				transform = "translateY("+this.height+"px)";
-			break;
-			case 'e' :
-				transform = "translateX("+this.width+"px)";
-			break;
-			case 'w' :
-				transform = "translateX(-"+this.width+"px)";
-			break;
-		}
-		this.el.setStyle({
-			"-webkit-transition": "all "+o.duration+"s ease-in",
-			"-moz-transition": "all 5s ease-in",
-			"-webkit-transform": transform,
-			"-moz-transform": transform
+			"-moz-transform": transform,
+			"-o-transform": transform
 		});
 	},
 	// private
