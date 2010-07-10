@@ -18,7 +18,8 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 			scope         : this,
 			tofront       : this.onBeforeShow,
 			toback        : this.onBeforeShow,
-			resize        : this.alignAndShow,
+			resize        : this.onParentResize,
+//			resize        : this.alignAndShow,
 			show          : this.alignAndShow,
 			beforedestroy : this.destroy,
 			afterrender   : function(p) {
@@ -67,6 +68,12 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 			beforehide  : {
 				scope : this,
 				fn    : this.onBeforeHide
+			},
+			afterrender : {
+				scope : this,
+				fn    : function() {
+					this.el.show();
+				}
 			}
 		});
 		if (this.size) {
@@ -95,6 +102,15 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 			this.show(true);
 		}
 		this.showAgain = false;
+	},
+	onParentResize  : function() {
+		if (this.el) {
+			this.CSS3clear();
+			this.onBeforeShow();
+			this.animDuration = 0.00001;
+            this.afterShow(false);
+            delete this.animDuration;
+		}
 	},
 	setZIndex       : function() {
 		return this.constructor.superclass.setZIndex.call(this, -3);
@@ -199,7 +215,6 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
         }
     },
 	afterShow       : function(skipAnim) {
-    	this.el.show();
     	if (this.animate && !skipAnim) {
     		this.getEl().removeClass('x-panel-animated');
     		if (Ext.isWebKit || Ext.isGecko4 || Ext.isOpera) {
@@ -215,6 +230,8 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
                         if (this.el.shadow) { // honour WindowDrawer's "shadow" config
                             // re-enable shadows after animation
                             this.el.enableShadow(true);
+                            this.el.shadow.show();
+                            alert(this.el.shadow.isVisible());
                         }
                         // REQUIRED!!
                         this.el.show(); // somehow forces the shadow to appear
@@ -224,6 +241,16 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
     	} else {
     		Ext.ux.Mitchell.WindowDrawer.superclass.afterShow.call(this);
     	}
+	},
+	CSS3clear       : function() {
+		this.el.setStyle({
+			"-webkit-transition": "",
+			"-moz-transition": "",
+			"-o-transition": "",
+			"-webkit-transform": "",
+			"-moz-transform": "",
+			"-o-transform": ""
+		});
 	},
 	CSS3slide       : function(o) {
 		var transform = "";
@@ -246,9 +273,19 @@ Ext.ux.Mitchell.WindowDrawer = Ext.extend(Ext.Window, {
 			}
 		}
 		if (o.callback) {
-			this.el.addListener("webkitTransitionEnd", o.callback, this, {
-				single: true
-			});
+			if (Ext.isWebKit) {
+				this.el.addListener("webkitTransitionEnd", o.callback, this, {
+					single: true
+				});
+			} else if (Ext.isGecko4) {
+				this.el.addListener("transitionend", o.callback, this, {
+					single: true
+				});
+			} else if (Ext.isOpera) {
+				this.el.addListener("oTransitionEnd", o.callback, this, {
+					single: true
+				});
+			}
 		}
 		this.el.setStyle({
 			"-webkit-transition": "-webkit-transform "+o.duration+"s ease-in",
